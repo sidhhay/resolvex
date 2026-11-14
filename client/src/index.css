@@ -1,0 +1,161 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   Design tokens
+   --------------------------------------------------------------------------
+   Colour roles, not raw hex, are used throughout the app. The categorical
+   series slots and the status palette come from a validated set: the three
+   series hues clear the CVD separation, normal-vision and lightness-band
+   checks in BOTH light and dark mode (worst adjacent pair ΔE 9.2 light /
+   9.4 dark against an ≥8 target).
+
+   Dark mode is *selected*, not an inverted filter: each token has its own
+   step chosen for the dark surface. Declared under both a media query (OS
+   preference) and a [data-theme] scope (the in-app toggle) so the toggle
+   wins in both directions.
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  --plane: #ffffff;            /* page background            */
+  --surface-1: #f8f8f8;        /* cards, chart surface       */
+  --surface-2: #f0f0f0;        /* subtle fills, table stripes */
+
+  --ink-primary: #050505;
+  --ink-secondary: #52514e;
+  --ink-muted: #898781;
+
+  --line: #e6e6e6;             /* hairline grid              */
+  --line-strong: #cccccc;      /* axis / baseline            */
+
+  /* Categorical series — fixed order, never cycled. */
+  --series-1: #facc15;         /* Gold/Yellow primary   */
+  --series-2: #eb6834;         /* orange */
+  --series-3: #1baf7a;         /* aqua   */
+
+  /* Ordinal ramp for escalation level. */
+  --escalation-1: #fde047;
+  --escalation-2: #ca8a04;
+
+  /* Status palette — reserved, never reused as a series colour. */
+  --status-good: #0ca30c;
+  --status-warning: #fab219;
+  --status-serious: #ec835a;
+  --status-critical: #d03b3b;
+
+  --focus-ring: #facc15;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --plane: #050505;
+    --surface-1: #111111;
+    --surface-2: #1a1a1a;
+
+    --ink-primary: #ffffff;
+    --ink-secondary: #c3c2b7;
+    --ink-muted: #898781;
+
+    --line: #222222;
+    --line-strong: #333333;
+
+    --series-1: #facc15;
+    --series-2: #d95926;
+    --series-3: #199e70;
+
+    --escalation-1: #fde047;
+    --escalation-2: #ca8a04;
+
+    --focus-ring: #facc15;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --plane: #050505;
+  --surface-1: #111111;
+  --surface-2: #1a1a1a;
+
+  --ink-primary: #ffffff;
+  --ink-secondary: #c3c2b7;
+  --ink-muted: #898781;
+
+  --line: #222222;
+  --line-strong: #333333;
+
+  --series-1: #facc15;
+  --series-2: #d95926;
+  --series-3: #199e70;
+
+  --escalation-1: #fde047;
+  --escalation-2: #ca8a04;
+
+  --focus-ring: #facc15;
+}
+
+/* Expose the roles to Tailwind as utilities: bg-surface, text-ink, etc. */
+@theme inline {
+  --color-plane: var(--plane);
+  --color-surface: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+
+  --color-ink: var(--ink-primary);
+  --color-ink-secondary: var(--ink-secondary);
+  --color-ink-muted: var(--ink-muted);
+
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+
+  --color-series-1: var(--series-1);
+  --color-series-2: var(--series-2);
+  --color-series-3: var(--series-3);
+
+  --color-escalation-1: var(--escalation-1);
+  --color-escalation-2: var(--escalation-2);
+
+  --color-good: var(--status-good);
+  --color-warning: var(--status-warning);
+  --color-serious: var(--status-serious);
+  --color-critical: var(--status-critical);
+
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--plane);
+    color: var(--ink-primary);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* One visible, consistent focus indicator for keyboard users. */
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Axis ticks and table columns align only with tabular figures; everything
+     else keeps proportional figures per the type spec. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

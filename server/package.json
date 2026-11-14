@@ -1,0 +1,46 @@
+{
+  "name": "resolvex-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ResolveX \u2014 AI-assisted grievance and escalation management API",
+  "type": "module",
+  "engines": {
+    "node": ">=20.11"
+  },
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "escalate:once": "node src/jobs/escalationCron.js --once",
+    "escalate:cron": "node src/jobs/escalationCron.js",
+    "db:schema": "psql \"$DATABASE_URL\" -f ../db/schema.sql",
+    "db:seed": "psql \"$DATABASE_URL\" -f ../db/seed.sql",
+    "test": "node --env-file=.env.test --test tests/*.test.js",
+    "typecheck": "tsc -p tsconfig.json",
+    "test:watch": "node --env-file=.env.test --test --watch tests/*.test.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.124.0",
+    "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.11.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.3.0",
+    "node-cron": "^4.6.0",
+    "nodemailer": "^10.0.1",
+    "pg": "^8.23.0",
+    "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/multer": "^2.0.0",
+    "@types/node": "^22.10.2",
+    "@types/pg": "^8.11.10",
+    "typescript": "^5.7.2"
+  }
+}

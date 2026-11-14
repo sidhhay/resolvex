@@ -1,0 +1,30 @@
+{
+  "//": "Type-checking only (noEmit). The runtime is plain ESM JavaScript; types come from JSDoc. Run: npm run typecheck",
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": [
+      "ES2023"
+    ],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": false,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "forceConsistentCasingInFileNames": true,
+    "types": [
+      "node",
+      "express",
+      "multer"
+    ]
+  },
+  "include": [
+    "src/**/*.js",
+    "src/**/*.d.ts",
+    "tests/**/*.js",
+    "api/**/*.js"
+  ]
+}
