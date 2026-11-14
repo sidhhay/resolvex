@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+code/backend/node_modules/
 
 # Build output
 dist/
@@ -11,6 +12,7 @@ build/
 .env
 .env.local
 .env.*.local
+code/backend/.env
 !.env.example
 !.env.test
 
@@ -20,6 +22,8 @@ server/uploads/
 # Logs and runtime
 *.log
 npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
 pids/
 *.pid
 
@@ -28,6 +32,12 @@ pids/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Agent metadata
+code/backend/.agents/
+code/backend/.claude/
+code/backend/.cursor/
+code/backend/.devin/
 
 # Coverage
 coverage/

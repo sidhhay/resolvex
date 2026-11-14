@@ -17,6 +17,7 @@ affected; and the resolution is not final until the complainant says so.
 
 - [Architecture](#architecture)
 - [The four design patterns](#the-four-design-patterns)
+- [Project Documentation & Diagrams](#project-documentation--diagrams)
 - [Running it](#running-it)
 - [Deploying](#deploying)
 - [Database](#database)
@@ -24,6 +25,7 @@ affected; and the resolution is not final until the complainant says so.
 - [Configuration](#configuration)
 - [Testing](#testing)
 - [Design decisions worth knowing about](#design-decisions-worth-knowing-about)
+- [Contributors & License](#contributors--license)
 
 ---
 
@@ -87,7 +89,19 @@ client/
     context/              Auth · Socket · Toast · Theme providers
     components/           ProtectedRoute, timeline, transition dialog, charts
     pages/                student/ handler/ admin/
+docs/                     Architecture, requirements, and design specifications
+assets/                   System diagrams (DFD Level 0-2, ER, Gantt, Use Case)
 ```
+
+---
+
+## Project Documentation & Diagrams
+
+Complementary project artifacts are available in the repository:
+
+- 📊 **Architecture & Diagrams**: [`assets/diagrams/`](assets/diagrams/) and [`assets/screenshots/`](assets/screenshots/) (DFD Level 0/1/2, ER diagram, Component diagram, Use Case)
+- 📑 **Coursework & Specifications**: [`docs/`](docs/) (`architecture.md`, `design-patterns.md`, `database-design.md`, `requirements.md`)
+- 📝 **Proposal & Weekly Journals**: [`project-proposal/`](project-proposal/) and [`journals/`](journals/)
 
 ---
 
@@ -263,8 +277,7 @@ npm run escalate:once     # single pass — for a Kubernetes CronJob or system c
 
 ## Deploying
 
-**[DEPLOYMENT.md](DEPLOYMENT.md)** covers Vercel end to end — two projects, the
-environment variables, and the Cron Job that replaces `node-cron`.
+**[DEPLOYMENT.md](DEPLOYMENT.md)** covers Vercel, Render, and Railway end to end.
 
 The one thing to know before you start: **Socket.IO cannot run on Vercel.** A
 Function is request-scoped, so nothing holds a websocket open. The client
@@ -272,10 +285,6 @@ handles this — set `VITE_REALTIME=off` and it refreshes on a timer instead of
 live — but if instant updates matter, put `client/` on Vercel and `server/` on a
 host that runs a persistent process (Render, Railway, Fly). That path needs no
 code changes at all.
-
-Either way the domain is unaffected: the State machine, the classification
-Strategy, the escalation Chain and the Observer fan-out to notifications and
-e-mail all behave identically. Only the delivery of updates changes.
 
 ---
 
@@ -300,23 +309,6 @@ user's own complaints) and a **partial** index for the SLA sweep:
 CREATE INDEX idx_complaints_sla_sweep ON complaints (last_activity_at)
   WHERE status NOT IN ('Resolved', 'Closed');
 ```
-
-Closed work is the bulk of the table over time and is never an escalation
-candidate, so excluding it keeps the sweep's index small permanently.
-
-### Columns beyond the base specification
-
-Added because the SLA and analytics features cannot be built without them:
-
-| Column | Why |
-|---|---|
-| `last_activity_at` | The SLA clock. Deliberately **separate from `updated_at`**: only meaningful lifecycle activity moves it, so a cosmetic row touch cannot silently reset an SLA. |
-| `assigned_at` | "Time to assignment". Set on the *first* assignment only — a later hand-over must not rewrite that number. |
-| `resolved_at`, `closed_at` | "Time to resolution" and SLA compliance. Cleared on reopen. |
-| `escalation_level` | Denormalised from `escalations` so the sweep's guard is a single-row read. |
-| `resolution_note`, `closure_note` | Required by the state machine's guards. |
-| `ai_confidence`, `ai_strategy` | Auditing the routing decision; makes an LLM outage visible. |
-| `priority` | Predicted by the classifier; drives queue ordering. |
 
 ---
 
@@ -346,28 +338,6 @@ All routes are under `/api`. Everything except `/auth/register` and
 | `GET` | `/analytics/escalations` | admin | The escalation log |
 | `POST` | `/analytics/escalations/run` | admin | Triggers the sweep on demand |
 
-Assigning, investigating, resolving, reopening, closing and reassigning are all
-the same operation — a state transition — so they share one endpoint:
-
-```http
-POST /api/complaints/42/transitions
-{ "to": "Resolved", "resolutionNote": "Replaced the failing access point." }
-```
-
-Errors are a consistent envelope:
-
-```json
-{ "error": { "code": "INVALID_STATE_TRANSITION",
-             "message": "Cannot move a complaint from Submitted to Investigating.",
-             "details": { "from": "Submitted", "allowed": ["Assigned", "Escalated", "Closed"] } } }
-```
-
-### Socket.IO
-
-The handshake carries the same JWT, so an unauthenticated socket joins no rooms
-and receives nothing. Rooms: `user:<id>`, `dept:<id>`, `role:admin`,
-`complaint:<id>`. Events: `notification:new`, `complaint:update`.
-
 ---
 
 ## Configuration
@@ -385,10 +355,6 @@ most:
 | `AI_MIN_CONFIDENCE` | `0.35` | Below this an LLM verdict is discarded |
 | `AI_TIMEOUT_MS` | `8000` | Per-attempt ceiling before falling through |
 | `MAIL_ENABLED` | `false` | `false` logs e-mails instead of sending them |
-
-Configuration is validated at boot; the process fails fast with an aggregated
-list of every problem rather than dying on the first request that needs a
-missing value.
 
 ---
 
@@ -410,51 +376,7 @@ npm run typecheck # tsc --checkJs over the whole source tree
 
 ---
 
-## Design decisions worth knowing about
+## Contributors & License
 
-**"Fully typed" is JSDoc + `checkJs`, not TypeScript.** The specified stack is
-Node/Express and the frontend is JSX, so the source is JavaScript annotated with
-JSDoc and checked by `tsc` in `noEmit` mode (`npm run typecheck`, currently
-clean). That gives real type checking with no build step and no transpiler in
-the request path. If you would rather have `.ts`, the annotations are already
-there and the conversion is mechanical.
-
-**Uploads are verified by magic bytes, not `Content-Type`.** The browser-supplied
-type is trivially spoofable; `services/uploadService.js` sniffs the file
-signature and rejects anything that is not a real JPEG, PNG, WebP, GIF or PDF.
-An SVG — a script-execution vector — is refused however it labels itself. In
-production, prefer Cloudinary: user-supplied files served from the API's own
-origin are a risk no amount of sniffing removes.
-
-**Concurrent transitions are serialised with a row lock.** A transition reads
-the complaint `FOR UPDATE` inside its transaction, so two handlers clicking
-"Mark resolved" simultaneously are ordered; the second sees the committed status
-and is rejected by the state machine rather than silently overwriting the first.
-
-**Login is constant-time.** An unknown e-mail is compared against a dummy bcrypt
-hash so "no such account" cannot be distinguished from "wrong password" by
-timing.
-
-**Rate limiting is in-process by design.** It is enough for a single instance and
-adds no dependency. Behind several replicas, swap the map in
-`middleware/rateLimit.js` for Redis — the middleware signature does not change.
-
-**Chart colours were validated, not chosen by eye.** The categorical series clear
-colour-vision-deficiency separation, lightness-band and contrast checks in both
-light and dark mode. Escalation level 1 vs 2 is a magnitude within one concept,
-so it uses a single hue stepped light→dark rather than two categorical colours,
-and status colours (good/warning/critical) are reserved — never reused as a
-series colour, and always paired with an icon and a text label so meaning never
-rests on colour alone. Every chart has a data-table view.
-
-**Read authorisation returns 403, not 404.** In an accountability system,
-pretending a record does not exist would be misleading. A caller with a valid id
-and no permission is told so.
-
-### Known limitations
-
-- Single access token, no refresh-token rotation. Sessions last `JWT_EXPIRES_IN`
-  (default 7 days); signing out is client-side only.
-- The keyword classifier is English-only.
-- Notifications are not digested — a busy handler gets one row per event.
-- No pagination beyond page/pageSize on the escalation log.
+- **Lead Developer**: Sidhhay Abrol
+- **License**: MIT
