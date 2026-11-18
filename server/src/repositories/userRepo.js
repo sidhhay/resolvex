@@ -150,3 +150,49 @@ export async function emailsFor(ids) {
   );
   return rows.map((r) => r.email);
 }
+
+/**
+ * Saves a hashed password-reset token for a user.
+ * @param {string} email
+ * @param {string} tokenHash  SHA-256 hex of the raw token
+ * @param {Date} expiresAt
+ */
+export async function setPasswordResetToken(email, tokenHash, expiresAt) {
+  await query(
+    `UPDATE users SET password_reset_token = $1, password_reset_expires = $2 WHERE email = $3`,
+    [tokenHash, expiresAt, email],
+  );
+}
+
+/**
+ * Finds a user by a valid (unexpired) password-reset token hash.
+ * @param {string} tokenHash
+ * @returns {Promise<UserRecord | null>}
+ */
+export async function findByResetToken(tokenHash) {
+  const { rows } = await query(
+    `SELECT ${PUBLIC_COLUMNS} ${FROM_USERS}
+     WHERE u.password_reset_token = $1
+       AND u.password_reset_expires > now()
+       AND u.is_active = TRUE`,
+    [tokenHash],
+  );
+  return rows[0] ?? null;
+}
+
+/**
+ * Updates password hash and clears reset token atomically.
+ * @param {number} userId
+ * @param {string} newPasswordHash
+ */
+export async function resetPassword(userId, newPasswordHash) {
+  await query(
+    `UPDATE users
+     SET password_hash = $1,
+         password_reset_token = NULL,
+         password_reset_expires = NULL,
+         updated_at = now()
+     WHERE id = $2`,
+    [newPasswordHash, userId],
+  );
+}

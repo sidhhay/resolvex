@@ -89,6 +89,7 @@ export const config = {
   nodeEnv,
   isProduction,
   isTest: nodeEnv === 'test',
+  host: optional('HOST', '0.0.0.0'),
   port: numeric('PORT', 4000, { min: 1, max: 65535 }),
 
   /** Origins allowed by CORS and by the Socket.IO handshake. */

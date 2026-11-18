@@ -50,6 +50,53 @@ router.post('/login', authLimiter, validate(credentialFields), asyncHandler(auth
 
 router.get('/me', authenticate, asyncHandler(authController.me));
 
+const passwordResetLimiter = rateLimit({
+  keyPrefix: 'pwd-reset',
+  max: 5,
+  message: 'Too many password reset requests. Wait 15 minutes before trying again.',
+});
+
+const otpLimiter = rateLimit({
+  keyPrefix: 'otp',
+  max: 5,
+  message: 'Too many OTP requests. Wait 15 minutes before trying again.',
+});
+
+// Forgot / Reset password
+router.post(
+  '/forgot-password',
+  passwordResetLimiter,
+  validate({ email: credentialFields.email }),
+  asyncHandler(authController.forgotPassword),
+);
+
+router.post(
+  '/reset-password',
+  validate({
+    token: { type: 'string', required: true, min: 64, max: 64 },
+    password: credentialFields.password,
+  }),
+  asyncHandler(authController.resetPassword),
+);
+
+// Email OTP login
+router.post(
+  '/otp/request',
+  otpLimiter,
+  validate({ email: credentialFields.email }),
+  asyncHandler(authController.requestOtp),
+);
+
+router.post(
+  '/otp/verify',
+  otpLimiter,
+  validate({
+    email: credentialFields.email,
+    code: { type: 'string', required: true, min: 6, max: 6, pattern: /^\d{6}$/, message: 'Enter the 6-digit code from your email' },
+  }),
+  asyncHandler(authController.verifyOtp),
+);
+
 // Staff provisioning — administrators only.
 router.post(
   '/users',

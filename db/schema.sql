@@ -253,4 +253,25 @@ CREATE TRIGGER trg_complaints_updated_at
   BEFORE UPDATE ON complaints
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
+-- =============================================================================
+-- Password Reset & OTP Login
+-- =============================================================================
+
+-- Password reset: hashed token + expiry stored on the user row.
+-- Using SHA-256 hex of the raw token; raw token only ever lives in the email link.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_token TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_expires TIMESTAMPTZ;
+
+-- OTP login codes. One active row per user; re-requesting overwrites it.
+CREATE TABLE IF NOT EXISTS auth_otps (
+  id           BIGSERIAL PRIMARY KEY,
+  user_id      BIGINT      NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+  code_hash    TEXT        NOT NULL,          -- SHA-256 of the 6-digit code
+  expires_at   TIMESTAMPTZ NOT NULL,
+  used         BOOLEAN     NOT NULL DEFAULT FALSE,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT auth_otps_user_key UNIQUE (user_id)  -- one active OTP per user
+);
+CREATE INDEX IF NOT EXISTS idx_auth_otps_user ON auth_otps (user_id);
+
 COMMIT;

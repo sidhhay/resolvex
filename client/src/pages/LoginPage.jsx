@@ -250,6 +250,12 @@ export function LoginPage() {
               />
             </div>
 
+              <div className="flex justify-end -mt-2">
+                <Link to="/forgot-password" className="text-xs font-semibold text-ink-muted hover:text-series-1 transition-colors">
+                  Forgot password?
+                </Link>
+              </div>
+
             {error && (
               <div role="alert" className="flex items-center gap-3 bg-critical/10 border border-critical/20 px-4 py-3 rounded-lg mt-2">
                 <div className="w-1.5 h-6 rounded-full bg-critical"></div>
@@ -267,7 +273,13 @@ export function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-12 pt-8 border-t border-line">
+          <div className="mt-10 pt-8 border-t border-line flex flex-col gap-4">
+            <p className="text-center text-sm font-medium text-ink-secondary">
+              Prefer a one-time code?{' '}
+              <Link to="/login/otp" className="font-bold text-series-1 hover:underline">
+                Sign in with email code
+              </Link>
+            </p>
             <p className="text-center text-sm font-medium text-ink-secondary">
               Don't have an account yet?{' '}
               <Link to="/register" className="font-bold text-series-1 hover:underline hover:text-series-2 transition-colors">

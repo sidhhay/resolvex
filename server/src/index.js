@@ -57,8 +57,8 @@ async function start() {
     });
   }
 
-  server.listen(config.port, () => {
-    logger.info(`ResolveX API listening on :${config.port}`, {
+  server.listen(config.port, config.host, () => {
+    logger.info(`ResolveX API listening on ${config.host}:${config.port}`, {
       env: config.nodeEnv,
       origins: config.clientOrigins,
     });

@@ -14,6 +14,9 @@ import { AppLayout } from './components/AppLayout.jsx';
 import { ProtectedRoute, homePathFor } from './components/ProtectedRoute.jsx';
 import { LoginPage } from './pages/LoginPage.jsx';
 import { RegisterPage } from './pages/RegisterPage.jsx';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage.jsx';
+import { ResetPasswordPage } from './pages/ResetPasswordPage.jsx';
+import { OtpLoginPage } from './pages/OtpLoginPage.jsx';
 import { MyComplaintsPage } from './pages/student/MyComplaintsPage.jsx';
 import { NewComplaintPage } from './pages/student/NewComplaintPage.jsx';
 import { ComplaintDetailPage } from './pages/student/ComplaintDetailPage.jsx';
@@ -39,6 +42,9 @@ export function App() {
                 {/* Public */}
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
+                <Route path="/login/otp" element={<OtpLoginPage />} />
 
                 {/* Everything below requires a session. */}
                 <Route element={<ProtectedRoute />}>

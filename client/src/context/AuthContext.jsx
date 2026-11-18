@@ -68,6 +68,12 @@ export function AuthProvider({ children }) {
     return data.user;
   }, []);
 
+  /** Used by OTP login: the server returns a token+user directly. */
+  const loginWithToken = useCallback((token, userData) => {
+    setToken(token);
+    setUser(userData);
+  }, []);
+
   const register = useCallback(async (input) => {
     const data = await authApi.register(input);
     setToken(data.token);
@@ -86,11 +92,12 @@ export function AuthProvider({ children }) {
       initialising,
       isAuthenticated: Boolean(user),
       login,
+      loginWithToken,
       register,
       logout,
       hasRole,
     }),
-    [user, initialising, login, register, logout, hasRole],
+    [user, initialising, login, loginWithToken, register, logout, hasRole],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

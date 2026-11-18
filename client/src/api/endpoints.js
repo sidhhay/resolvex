@@ -4,6 +4,10 @@ export const authApi = {
   login: async (credentials) => (await api.post('/auth/login', credentials)).data,
   register: async (data) => (await api.post('/auth/register', data)).data,
   me: async () => (await api.get('/auth/me')).data,
+  forgotPassword: async (email) => (await api.post('/auth/forgot-password', { email })).data,
+  resetPassword: async (token, password) => (await api.post('/auth/reset-password', { token, password })).data,
+  requestOtp: async (email) => (await api.post('/auth/otp/request', { email })).data,
+  verifyOtp: async (email, code) => (await api.post('/auth/otp/verify', { email, code })).data,
 };
 
 export const complaintApi = {
