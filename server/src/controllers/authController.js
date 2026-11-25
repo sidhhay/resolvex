@@ -215,7 +215,7 @@ export async function forgotPassword(req, res) {
     const sent = await sendMail({
       to: email,
       subject: 'Your ResolveX password reset code',
-      text: `Your ResolveX password reset code is: ${code}\\n\\nIt expires in 10 minutes. If you did not request this, ignore this email.`,
+      text: `Your ResolveX password reset code is: ${code}\n\nIt expires in 10 minutes. If you did not request this, ignore this email.`,
       html: renderEmail({
         heading: `Your password reset code: ${code}`,
         body: 'Enter this six-digit code in ResolveX to reset your password. It expires in 10 minutes. Do not share it with anyone.',
@@ -254,7 +254,7 @@ export async function resetPasswordWithOtp(req, res) {
   await sendMail({
     to: user.email,
     subject: 'Your ResolveX password was changed',
-    text: `Hello ${user.name},\\n\\nYour ResolveX account password was successfully updated. If you did not perform this change, contact an administrator immediately.`,
+    text: `Hello ${user.name},\n\nYour ResolveX account password was successfully updated. If you did not perform this change, contact an administrator immediately.`,
     html: renderEmail({
       heading: 'Password changed successfully',
       body: `Hello ${user.name}, your account password has been updated. If you did not make this change, contact an administrator immediately.`,
