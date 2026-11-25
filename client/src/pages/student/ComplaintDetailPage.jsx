@@ -112,7 +112,6 @@ export function ComplaintDetailPage() {
   }
 
   const { complaint, timeline, escalations, availableTransitions, sla } = data;
-  console.log('DEBUG DATA IN COMPLAINT DETAIL:', data);
 
   return (
     <div className="flex flex-col gap-4">
@@ -159,15 +158,7 @@ export function ComplaintDetailPage() {
               </p>
 
               {complaint.attachment_url && (
-                <a
-                  href={complaint.attachment_url}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className="mt-4 inline-flex items-center gap-2 rounded-md bg-surface-2 px-3 py-2 text-xs text-series-1 transition hover:brightness-110"
-                >
-                  <Paperclip size={13} aria-hidden />
-                  View attached evidence
-                </a>
+                <AttachmentPreview url={complaint.attachment_url} />
               )}
             </div>
 
@@ -288,6 +279,44 @@ export function ComplaintDetailPage() {
         departments={departments}
         onSubmit={submitTransition}
       />
+    </div>
+  );
+}
+
+/**
+ * Shared by the student, handler, and admin complaint-detail route.
+ * Images render inline; non-image attachments and image-load failures retain
+ * a direct link so the original evidence can still be opened separately.
+ */
+function AttachmentPreview({ url }) {
+  const [imageFailed, setImageFailed] = useState(false);
+
+  return (
+    <div className="mt-4 rounded-lg border border-line bg-surface-2 p-3">
+      <p className="mb-2 flex items-center gap-2 text-xs font-medium text-ink-secondary">
+        <Paperclip size={13} aria-hidden />
+        Attached evidence
+      </p>
+      {!imageFailed && (
+        <a href={url} target="_blank" rel="noreferrer noopener" className="block">
+          <img
+            src={url}
+            alt="Complaint attachment"
+            loading="lazy"
+            onError={() => setImageFailed(true)}
+            className="max-h-96 w-full rounded-md object-contain"
+          />
+        </a>
+      )}
+      <a
+        href={url}
+        target="_blank"
+        rel="noreferrer noopener"
+        className="mt-2 inline-flex items-center gap-2 text-xs text-series-1 transition hover:brightness-110"
+      >
+        <Paperclip size={13} aria-hidden />
+        {imageFailed ? 'Open attached file' : 'Open full-size attachment'}
+      </a>
     </div>
   );
 }
