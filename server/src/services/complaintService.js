@@ -17,6 +17,7 @@ import { config } from '../config/env.js';
 import { ForbiddenError, NotFoundError } from '../domain/errors.js';
 import { planTransition, getState } from '../domain/complaintState.js';
 import { classifyTicket } from './ai/index.js';
+import { FALLBACK_CATEGORY, findCategoryByLabel } from './ai/taxonomy.js';
 import { EVENTS } from '../events/events.js';
 import { eventBus } from '../events/eventBus.js';
 import * as complaintRepo from '../repositories/complaintRepo.js';
@@ -185,28 +186,54 @@ function eventForTransition(to, from) {
  * @returns {Promise<{ complaint: ComplaintRecord, classification: import('./ai/index.js').ClassificationResult }>}
  */
 export async function createComplaint(input, user) {
-  const classification = await classifyTicket({
+  const rawClassification = await classifyTicket({
     title: input.title,
     description: input.description,
   });
 
-  // A department that the classifier named but that does not exist in this
-  // installation must not lose the complaint — fall back to general admin.
-  const department =
-    (await departmentRepo.findBySlug(classification.departmentSlug)) ??
-    (await departmentRepo.findBySlug('general'));
+  // Never trust a free-form or stale routing slug. Resolve the category through
+  // the canonical taxonomy, then use its department slug.
+  const category =
+    findCategoryByLabel(rawClassification.category) ?? FALLBACK_CATEGORY;
+  let classification = {
+    ...rawClassification,
+    category: category.label,
+    departmentSlug: category.departmentSlug,
+  };
 
-  if (!department) {
-    logger.error('No department matched the classification and no "general" fallback exists', {
-      slug: classification.departmentSlug,
+  let department = await departmentRepo.findBySlug(category.departmentSlug);
+
+  // A missing mapped department degrades to the guaranteed manual-triage queue.
+  if (!department && category.departmentSlug !== FALLBACK_CATEGORY.departmentSlug) {
+    logger.warn('Classified department is missing; routing complaint to General Administration', {
+      category: category.label,
+      slug: category.departmentSlug,
     });
+    department = await departmentRepo.findBySlug(FALLBACK_CATEGORY.departmentSlug);
+    classification = {
+      ...classification,
+      category: FALLBACK_CATEGORY.label,
+      departmentSlug: FALLBACK_CATEGORY.departmentSlug,
+      confidence: Math.min(classification.confidence, 0.2),
+      degraded: true,
+      reasoning: 'The predicted department is not configured; routed to General Administration for manual triage.',
+    };
+  }
+
+  // Fail closed before inserting anything. A complaint must never be persisted
+  // without a real department row; the database constraint is the final guard.
+  if (!department?.id) {
+    logger.error('Complaint creation blocked: no configured department or General Administration fallback', {
+      requestedSlug: category.departmentSlug,
+    });
+    throw new Error('Complaint routing is unavailable. Please try again later.');
   }
 
   const complaint = await complaintRepo.create({
     title: input.title.trim(),
     description: input.description.trim(),
     category: input.categoryOverride?.trim() || classification.category,
-    departmentId: department?.id ?? null,
+    departmentId: department.id;
     createdBy: user.id,
     priority: classification.priority,
     attachmentUrl: input.attachmentUrl ?? null,
