@@ -307,7 +307,7 @@ export async function transitionComplaint(params) {
     // The selected account must be active and eligible for the complaint's
     // effective department (including when an administrator moves departments).
     if (to === 'Assigned') {
-      const departmentId = payload.departmentId ?? current.department_id;
+      const departmentId = Number(payload.departmentId ?? current.department_id);
       if (!Number.isSafeInteger(departmentId) || departmentId <= 0) {
         throw new ForbiddenError('A valid department is required before assigning this complaint.');
       }
