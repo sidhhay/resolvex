@@ -15,7 +15,21 @@ export const authApi = {
 export const complaintApi = {
   list: async (params) => (await api.get('/complaints', { params })).data,
   detail: async (id) => (await api.get(`/complaints/${id}`)).data,
-  create: async (data) => (await api.post('/complaints', data)).data,
+  create: async (data, onUploadProgress) => {
+    const body = new FormData();
+    body.append('title', data.title);
+    body.append('description', data.description);
+    if (data.attachment) body.append('attachment', data.attachment);
+
+    return (
+      await api.post('/complaints', body, {
+        // Let the browser set the multipart boundary automatically.
+        onUploadProgress: (event) => {
+          if (event.total) onUploadProgress?.(Math.round((event.loaded * 100) / event.total));
+        },
+      })
+    ).data;
+  },
   transition: async (id, data) => (await api.post(`/complaints/${id}/transitions`, data)).data,
   meta: async () => (await api.get('/complaints/meta')).data,
   timeline: async (id) => (await api.get(`/complaints/${id}/timeline`)).data,
