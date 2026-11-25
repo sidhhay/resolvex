@@ -252,13 +252,23 @@ export async function createComplaint(input, user) {
     return created;
   });
 
-  const audience = await buildAudience(EVENTS.COMPLAINT_CREATED, complaint);
-  await eventBus.publish(EVENTS.COMPLAINT_CREATED, {
-    complaint,
-    actor: { id: user.id, name: user.name, role: user.role },
-    toStatus: 'Submitted',
-    audience,
-  });
+  // Persistence has committed at this point. Notification preparation must
+  // never make the caller believe creation failed (or trigger attachment cleanup)
+  // after a complaint row already references the uploaded evidence.
+  try {
+    const audience = await buildAudience(EVENTS.COMPLAINT_CREATED, complaint);
+    await eventBus.publish(EVENTS.COMPLAINT_CREATED, {
+      complaint,
+      actor: { id: user.id, name: user.name, role: user.role },
+      toStatus: 'Submitted',
+      audience,
+    });
+  } catch (error) {
+    logger.error('Complaint created, but its notification could not be prepared', {
+      complaintId: complaint.id,
+      error,
+    });
+  }
 
   return { complaint, classification };
 }
