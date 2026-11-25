@@ -298,7 +298,7 @@ export async function requestOtp(req, res) {
       }),
     });
 
-    logger.info('OTP sent', { email, code });
+    logger.info('OTP email requested', { email });
   }
 
   res.json({
