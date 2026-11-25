@@ -112,18 +112,22 @@ export async function listHandlers(departmentId) {
 
 /**
  * Resolve an account that may own a complaint in the supplied department.
+ * When called inside a transaction, use that transaction's client rather than
+ * checking out a second pool connection (production may have pool max = 1).
  * Active administrators may own any department; handlers must match exactly.
+ *
  * @param {number} userId
  * @param {number} departmentId
+ * @param {import('pg').PoolClient} [client]
  * @returns {Promise<UserRecord | null>}
  */
-export async function findAssignableHandler(userId, departmentId) {
-  const { rows } = await query(
-    `SELECT ${PUBLIC_COLUMNS} ${FROM_USERS}
+export async function findAssignableHandler(userId, departmentId, client) {
+  const sql = `SELECT ${PUBLIC_COLUMNS} ${FROM_USERS}
       WHERE u.id = $1 AND u.is_active = TRUE
-        AND (u.role = 'admin' OR (u.role = 'handler' AND u.department_id = $2))`,
-    [userId, departmentId],
-  );
+        AND (u.role = 'admin' OR (u.role = 'handler' AND u.department_id = $2))`;
+  const { rows } = client
+    ? await client.query(sql, [userId, departmentId])
+    : await query(sql, [userId, departmentId]);
   return rows[0] ?? null;
 }
 
