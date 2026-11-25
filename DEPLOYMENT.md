@@ -43,7 +43,7 @@ provider with a built-in pooler:
 - **Supabase** — use the connection-pooler URI on port `6543`.
 - **Vercel Postgres** — pooled by default.
 
-Then apply the schema:
+Then apply the schema (the signup-verification table is included):
 
 ```bash
 psql "$DATABASE_URL" -f db/schema.sql
@@ -87,10 +87,18 @@ Set these in **Project → Settings → Environment Variables**:
 | `CLOUDINARY_API_SECRET` | | |
 | `APP_URL` | your client URL | Deep links in e-mails |
 | `NODE_ENV` | `production` | |
+| `MAIL_ENABLED` | `true` | Required for signup verification emails and OTP/password-reset mail |
+| `SMTP_HOST` | `smtp.gmail.com` (Gmail example) | SMTP server hostname |
+| `SMTP_PORT` | `465` | Gmail SSL port |
+| `SMTP_SECURE` | `true` | Use TLS on connect |
+| `SMTP_USER` | your sending Gmail address | SMTP username |
+| `SMTP_PASS` | Google App Password | Never use your normal Gmail password |
+| `MAIL_FROM` | `ResolveX <your-sending-address@gmail.com>` | Must be accepted by your SMTP provider |
 
 Optional: `ANTHROPIC_API_KEY` (routing quality — without it the deterministic
-keyword engine handles everything), `MAIL_ENABLED` + `SMTP_*` (e-mail; without
-them messages are logged), and the `SLA_*` thresholds.
+keyword engine handles everything), and the `SLA_*` thresholds. Email is required
+for signup verification: without working `MAIL_ENABLED` and `SMTP_*` settings,
+verification requests fail rather than silently creating unverified accounts.
 
 `CRON_SECRET` is the one people forget. Vercel sends it as
 `Authorization: Bearer $CRON_SECRET` on every scheduled call, and the endpoint
