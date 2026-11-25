@@ -99,6 +99,7 @@ export function AuthProvider({ children }) {
       login,
       loginWithToken,
       register,
+      verifyRegistration,
       logout,
       hasRole,
     }),
