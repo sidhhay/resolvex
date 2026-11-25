@@ -26,7 +26,8 @@ import { getToken, setToken, setUnauthorizedHandler } from '../api/client.js';
  * @property {boolean} initialising  True until the stored token has been checked.
  * @property {boolean} isAuthenticated
  * @property {(email: string, password: string) => Promise<SessionUser>} login
- * @property {(input: { name: string, email: string, password: string }) => Promise<SessionUser>} register
+ * @property {(input: { name: string, email: string, password: string }) => Promise<void>} register
+ * @property {(email: string, code: string) => Promise<SessionUser>} verifyRegistration
  * @property {() => void} logout
  * @property {(...roles: string[]) => boolean} hasRole
  */
@@ -75,7 +76,11 @@ export function AuthProvider({ children }) {
   }, []);
 
   const register = useCallback(async (input) => {
-    const data = await authApi.register(input);
+    await authApi.register(input);
+  }, []);
+
+  const verifyRegistration = useCallback(async (email, code) => {
+    const data = await authApi.verifyRegistration(email, code);
     setToken(data.token);
     setUser(data.user);
     return data.user;
@@ -97,7 +102,7 @@ export function AuthProvider({ children }) {
       logout,
       hasRole,
     }),
-    [user, initialising, login, loginWithToken, register, logout, hasRole],
+    [user, initialising, login, loginWithToken, register, verifyRegistration, logout, hasRole],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
