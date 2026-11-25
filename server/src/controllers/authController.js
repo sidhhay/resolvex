@@ -8,7 +8,7 @@
 import bcrypt from 'bcryptjs';
 import crypto from 'node:crypto';
 import { config } from '../config/env.js';
-import { ConflictError, UnauthorizedError, BadRequestError } from '../domain/errors.js';
+import { ConflictError, UnauthorizedError, BadRequestError, ServiceUnavailableError } from '../domain/errors.js';
 import { signAccessToken } from '../utils/tokens.js';
 import { requireUser } from '../middleware/auth.js';
 import * as userRepo from '../repositories/userRepo.js';
@@ -16,6 +16,7 @@ import * as departmentRepo from '../repositories/departmentRepo.js';
 import { logger } from '../config/logger.js';
 import { sendMail, renderEmail } from '../services/mailer.js';
 import * as otpRepo from '../repositories/otpRepo.js';
+import * as pendingSignupRepo from '../repositories/pendingSignupRepo.js';
 
 /**
  * A bcrypt hash of a value nobody knows, compared against when an e-mail does
@@ -51,30 +52,71 @@ function authResponse(user) {
 }
 
 /**
- * POST /api/auth/register — self-service, students only.
- *
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * POST /api/auth/register — begin student registration; account is not created yet.
  */
 export async function register(req, res) {
   const { name, email, password } = /** @type {any} */ (req.validated);
-
-  const existing = await userRepo.findByEmail(email);
-  if (existing) {
-    // The address is already visible to whoever owns it, and a vague error here
-    // would send real users in circles. Registration is rate-limited instead.
+  if (await userRepo.findByEmail(email)) {
     throw new ConflictError('An account with that e-mail address already exists');
   }
 
+  const code = String(crypto.randomInt(100000, 1000000));
   const passwordHash = await bcrypt.hash(password, config.auth.bcryptRounds);
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+  await pendingSignupRepo.savePendingSignup({
+    name, email, passwordHash, codeHash: sha256(code), expiresAt,
+  });
+
+  const sent = await sendMail({
+    to: email,
+    subject: 'Verify your email — ResolveX signup code',
+    text: `Your ResolveX verification code is: ${code}\n\nIt expires in 10 minutes. If you did not request this, ignore this email.`,
+    html: renderEmail({
+      heading: `Your verification code: ${code}`,
+      body: 'Enter this six-digit code in ResolveX to verify your email and finish creating your account. It expires in 10 minutes.',
+      cta: 'Open ResolveX',
+    }),
+  });
+  if (!sent) {
+    await pendingSignupRepo.deletePendingSignup(email);
+    throw new ServiceUnavailableError('We could not send the verification email. Please try again later.');
+  }
+
+  res.status(202).json({ message: 'Verification code sent. Check your email and enter the 6-digit code.' });
+}
+
+/**
+ * POST /api/auth/register/verify — create a student account only after email ownership is proven.
+ */
+export async function verifyRegistrationOtp(req, res) {
+  const { email, code } = /** @type {any} */ (req.validated);
+  const pending = await pendingSignupRepo.findPendingSignup(email);
+  if (!pending || new Date(pending.expires_at).getTime() <= Date.now()) {
+    if (pending) await pendingSignupRepo.deletePendingSignup(email);
+    throw new UnauthorizedError('Verification code expired or signup was not started. Please register again.');
+  }
+  if (pending.attempts >= 5) {
+    await pendingSignupRepo.deletePendingSignup(email);
+    throw new UnauthorizedError('Too many incorrect codes. Please start registration again.');
+  }
+  if (pending.code_hash !== sha256(code)) {
+    const attempts = await pendingSignupRepo.incrementAttempts(email);
+    if (attempts >= 5) await pendingSignupRepo.deletePendingSignup(email);
+    throw new UnauthorizedError('Incorrect verification code. Please check the code and try again.');
+  }
+  if (await userRepo.findByEmail(email)) {
+    await pendingSignupRepo.deletePendingSignup(email);
+    throw new ConflictError('An account with that e-mail address already exists');
+  }
+
   const user = await userRepo.create({
-    name,
+    name: pending.name,
     email,
-    passwordHash,
+    passwordHash: pending.password_hash,
     role: config.auth.selfServiceRole,
     departmentId: null,
   });
-
+  await pendingSignupRepo.deletePendingSignup(email);
   res.status(201).json(authResponse(user));
 }
 
