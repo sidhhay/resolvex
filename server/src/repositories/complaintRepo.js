@@ -83,11 +83,41 @@ const PATCHABLE_COLUMNS = Object.freeze(new Set([
  *           aiConfidence?: number | null, aiStrategy?: string | null }} input
  * @returns {Promise<ComplaintRecord>}
  */
-export async function create(input) {
+export async function createWithClient(client, input) {
   if (!Number.isSafeInteger(input.departmentId) || input.departmentId <= 0) {
     throw new TypeError('A valid departmentId is required to create a complaint');
   }
 
+  const { rows } = await client.query(
+    `INSERT INTO complaints
+       (title, description, category, department_id, created_by, priority,
+        attachment_url, ai_confidence, ai_strategy)
+     VALUES ($1, $2, $3, $4, $5, $6::complaint_priority, $7, $8, $9)
+     RETURNING id`,
+    [
+      input.title,
+      input.description,
+      input.category,
+      input.departmentId,
+      input.createdBy,
+      input.priority ?? 'medium',
+      input.attachmentUrl ?? null,
+      input.aiConfidence ?? null,
+      input.aiStrategy ?? null,
+    ],
+  );
+  const result = await client.query(`${SELECT_COMPLAINT} WHERE c.id = $1`, [rows[0].id]);
+  return /** @type {ComplaintRecord} */ (result.rows[0]);
+}
+
+/**
+ * @param {{ title: string, description: string, category: string,
+ *           createdBy: number, departmentId: number,
+ *           priority?: string, attachmentUrl?: string | null,
+ *           aiConfidence?: number | null, aiStrategy?: string | null }} input
+ * @returns {Promise<ComplaintRecord>}
+ */
+export async function create(input) {
   const { rows } = await query(
     `INSERT INTO complaints
        (title, description, category, department_id, created_by, priority,
