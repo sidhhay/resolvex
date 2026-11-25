@@ -6,6 +6,7 @@ export const authApi = {
   verifyRegistration: async (email, code) => (await api.post('/auth/register/verify', { email, code })).data,
   me: async () => (await api.get('/auth/me')).data,
   forgotPassword: async (email) => (await api.post('/auth/forgot-password', { email })).data,
+  resetPasswordWithOtp: async (email, code, password) => (await api.post('/auth/forgot-password/verify', { email, code, password })).data,
   resetPassword: async (token, password) => (await api.post('/auth/reset-password', { token, password })).data,
   requestOtp: async (email) => (await api.post('/auth/otp/request', { email })).data,
   verifyOtp: async (email, code) => (await api.post('/auth/otp/verify', { email, code })).data,
