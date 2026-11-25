@@ -8,8 +8,8 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { Button, Card, Field, inputClasses } from '../components/ui/index.jsx';
 import { homePathFor } from '../components/ProtectedRoute.jsx';
 
-const PASSWORD_RULE = /^(?=.*[A-Za-z])(?=.*\\d).{8,}$/;
-const EMAIL_RULE = /^[^@\\s]+@[^@\\s]+\\.[^@\\s]{2,}$/;
+const PASSWORD_RULE = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
+const EMAIL_RULE = /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/;
 
 export function RegisterPage() {
   const { register, verifyRegistration, isAuthenticated, user } = useAuth();
@@ -53,7 +53,7 @@ export function RegisterPage() {
 
   async function handleVerify(event) {
     event.preventDefault();
-    if (!/^\\d{6}$/.test(code)) {
+    if (!/^\d{6}$/.test(code)) {
       setError('Enter the 6-digit code sent to your email.');
       return;
     }
@@ -108,7 +108,7 @@ export function RegisterPage() {
                   maxLength={6}
                   className={inputClasses}
                   value={code}
-                  onChange={(e) => setCode(e.target.value.replace(/\\D/g, '').slice(0, 6))}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   placeholder="000000"
                 />
               </Field>
