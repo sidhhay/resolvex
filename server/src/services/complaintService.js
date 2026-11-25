@@ -233,7 +233,7 @@ export async function createComplaint(input, user) {
     title: input.title.trim(),
     description: input.description.trim(),
     category: input.categoryOverride?.trim() || classification.category,
-    departmentId: department.id;
+    departmentId: department.id,
     createdBy: user.id,
     priority: classification.priority,
     attachmentUrl: input.attachmentUrl ?? null,
