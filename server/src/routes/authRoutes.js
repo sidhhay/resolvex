@@ -101,7 +101,7 @@ router.post(
   }),
   validate({
     email: credentialFields.email,
-    code: { type: 'string', required: true, min: 6, max: 6, pattern: /^\\d{6}$/, message: 'Enter the 6-digit code from your email' },
+    code: { type: 'string', required: true, min: 6, max: 6, pattern: /^\d{6}$/, message: 'Enter the 6-digit code from your email' },
     password: credentialFields.password,
   }),
   asyncHandler(authController.resetPasswordWithOtp),
