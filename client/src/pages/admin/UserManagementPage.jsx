@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ShieldAlert, UserPlus, Check, Building2 } from 'lucide-react';
+import { ShieldAlert, UserPlus, Check, Building2, Eye, EyeOff } from 'lucide-react';
 import { usersApi, departmentApi } from '../../api/endpoints.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { Button, Card, Field, inputClasses, Spinner } from '../../components/ui/index.jsx';
@@ -10,6 +10,7 @@ export function UserManagementPage() {
   const [departments, setDepartments] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -95,15 +96,20 @@ export function UserManagementPage() {
           </Field>
 
           <Field label="Temporary Password" htmlFor="password" required>
+            <div className="relative">
             <input
               id="password"
-              type="text"
+              type={showPassword ? "text" : "password"}
               required
-              className={inputClasses}
+              className={`${inputClasses} pr-12`}
               value={formData.password}
               onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
               placeholder="e.g. TempPass123"
             />
+            <button type="button" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Hide password" : "Show password"} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink">
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+            </div>
             <p className="text-xs text-ink-muted mt-1">Must be at least 8 chars with a letter and a number.</p>
           </Field>
 
