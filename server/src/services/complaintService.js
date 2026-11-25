@@ -315,7 +315,7 @@ export async function transitionComplaint(params) {
       if (!Number.isSafeInteger(assigneeId) || assigneeId <= 0) {
         throw new ForbiddenError('Select a valid handler for this complaint.');
       }
-      const assignee = await userRepo.findAssignableHandler(assigneeId, departmentId);
+      const assignee = await userRepo.findAssignableHandler(assigneeId, departmentId, client);
       if (!assignee) {
         throw new ForbiddenError('The selected account is inactive or is not an eligible handler for this department.');
       }
