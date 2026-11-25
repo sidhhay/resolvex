@@ -6,8 +6,6 @@ import {
   CheckCircle2,
   Archive,
   AlertTriangle,
-  ArrowRight,
-  User,
 } from 'lucide-react';
 
 const STAGES = [
@@ -59,9 +57,8 @@ function getStageIndex(status) {
     case 'investigating':
     case 'in_progress':
     case 'in progress':
-      return 2;
     case 'escalated':
-      return 2; // Active high-priority investigation stage
+      return 2;
     case 'resolved':
       return 3;
     case 'closed':
@@ -72,11 +69,10 @@ function getStageIndex(status) {
 }
 
 export function LifecycleBar({ currentStatus = 'Submitted' }) {
+  const normalizedStatus = String(currentStatus).trim().toLowerCase();
   const activeIndex = getStageIndex(currentStatus);
-  const isEscalated = String(currentStatus).trim().toLowerCase() === 'escalated';
-  const isClosed = String(currentStatus).trim().toLowerCase() === 'closed';
-
-  // Calculate percentage along the 5 nodes (0%, 25%, 50%, 75%, 100%)
+  const isEscalated = normalizedStatus === 'escalated';
+  const isClosed = normalizedStatus === 'closed';
   const progressPercentage = (activeIndex / (STAGES.length - 1)) * 100;
 
   return (
@@ -91,7 +87,6 @@ export function LifecycleBar({ currentStatus = 'Submitted' }) {
           </p>
         </div>
 
-        {/* Current status pill */}
         <div className="flex items-center gap-2 self-start sm:self-auto">
           {isEscalated ? (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-600 border border-amber-500/30 animate-pulse">
@@ -101,10 +96,10 @@ export function LifecycleBar({ currentStatus = 'Submitted' }) {
           ) : isClosed ? (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-good/10 text-good border border-good/30">
               <CheckCircle2 size={13} />
-              Case Completed & Closed
+              Case Completed &amp; Closed
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-series-1/10 text-series-1 border border-series-1/20">
+            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-series-1/10 text-series-1 border border-series-1/20">
               Current: <strong className="font-bold">{currentStatus}</strong>
             </span>
           )}
@@ -112,24 +107,19 @@ export function LifecycleBar({ currentStatus = 'Submitted' }) {
       </div>
 
       <div className="relative max-w-2xl mx-auto my-8">
-        {/* Background Track */}
-        <div className="absolute top-6 left-4 right-4 h-1.5 bg-surface-2 rounded-full -translate-y-1/2 border border-line" />
+        {/* Track starts and ends at the centre of the first and last nodes. */}
+        <div className="absolute top-6 left-8 right-8 sm:left-12 sm:right-12 h-1.5 -translate-y-1/2 rounded-full bg-surface-2 border border-line overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-[width] duration-700 ease-in-out ${
+              isEscalated ? 'bg-amber-500' : 'bg-series-1'
+            }`}
+            style={{ width: `${progressPercentage}%` }}
+          />
+        </div>
 
-        {/* Dynamic Progress Fill */}
-        <div
-          className={`absolute top-6 left-4 h-1.5 rounded-full -translate-y-1/2 transition-all duration-700 ease-in-out ${
-            isEscalated ? 'bg-amber-500' : 'bg-series-1'
-          }`}
-          style={{
-            width: `calc(${progressPercentage}% * (1 - 32px / 100%))`,
-            maxWidth: 'calc(100% - 32px)',
-          }}
-        />
-
-        {/* Nodes for each stage */}
         <div className="relative z-10 flex justify-between items-start">
           {STAGES.map((stage, idx) => {
-            const isCompleted = idx <= activeIndex;
+            const isCompleted = idx < activeIndex;
             const isCurrent = idx === activeIndex;
             const Icon = stage.icon;
 
@@ -150,15 +140,14 @@ export function LifecycleBar({ currentStatus = 'Submitted' }) {
                 key={stage.key}
                 className="flex flex-col items-center text-center w-16 sm:w-24 group"
               >
-                {/* Stage Circle Node */}
                 <div
                   className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all duration-500 ${iconColorClass}`}
                   title={`${stage.label}: ${stage.desc}`}
+                  aria-current={isCurrent ? 'step' : undefined}
                 >
                   <Icon size={20} />
                 </div>
 
-                {/* Stage Labels */}
                 <div className="mt-3">
                   <p
                     className={`text-xs sm:text-sm font-semibold transition-colors ${
@@ -167,11 +156,11 @@ export function LifecycleBar({ currentStatus = 'Submitted' }) {
                           ? 'text-amber-600 font-bold'
                           : 'text-series-1 font-bold'
                         : isCompleted
-                        ? 'text-ink font-medium'
-                        : 'text-ink-muted'
+                          ? 'text-ink font-medium'
+                          : 'text-ink-muted'
                     }`}
                   >
-                    {isCurrent && isEscalated && stage.key === 'investigating'
+                    {isEscalated && stage.key === 'investigating'
                       ? 'Escalated'
                       : stage.label}
                   </p>
