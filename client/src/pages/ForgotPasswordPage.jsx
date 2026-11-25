@@ -32,9 +32,9 @@ export function ForgotPasswordPage() {
   async function handleReset(e) {
     e.preventDefault();
     setError('');
-    if (!/^\\d{6}$/.test(code)) { setError('Enter the six-digit code from your email.'); return; }
+    if (!/^\d{6}$/.test(code)) { setError('Enter the six-digit code from your email.'); return; }
     if (password !== confirm) { setError('Passwords do not match.'); return; }
-    if (!/^(?=.*[A-Za-z])(?=.*\\d).{8,}$/.test(password)) {
+    if (!/^(?=.*[A-Za-z])(?=.*\d).{8,}$/.test(password)) {
       setError('Password must be at least 8 characters with a letter and a number.');
       return;
     }
@@ -79,7 +79,7 @@ export function ForgotPasswordPage() {
                   <label htmlFor="code" className="block text-[11px] font-bold text-ink-secondary uppercase tracking-widest mb-2">Email verification code</label>
                   <input id="code" inputMode="numeric" autoComplete="one-time-code" maxLength={6} required
                     className="w-full bg-surface border border-line rounded-xl px-5 py-4 text-ink font-medium tracking-[0.35em] focus:outline-none focus:border-series-1 focus:ring-4 focus:ring-series-1/20"
-                    placeholder="000000" value={code} onChange={(e) => setCode(e.target.value.replace(/\\D/g, '').slice(0, 6))} />
+                    placeholder="000000" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} />
                 </div>
                 <div>
                   <label htmlFor="password" className="block text-[11px] font-bold text-ink-secondary uppercase tracking-widest mb-2">New password</label>
