@@ -104,7 +104,7 @@ CREATE TABLE IF NOT EXISTS complaints (
   -- be a deliberate act (anonymise instead of cascading the evidence away).
   created_by       BIGINT             NOT NULL REFERENCES users (id) ON DELETE RESTRICT,
   assigned_to      BIGINT             REFERENCES users (id) ON DELETE SET NULL,
-  department_id    BIGINT             REFERENCES departments (id) ON DELETE SET NULL,
+  department_id    BIGINT             NOT NULL REFERENCES departments (id) ON DELETE RESTRICT,
 
   -- ---- Fields beyond the base spec, required by the SLA / analytics features --
   resolution_note  TEXT,        -- mandatory to enter 'Resolved' (see CHECK below)
