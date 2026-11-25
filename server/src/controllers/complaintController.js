@@ -60,7 +60,7 @@ export async function create(req, res) {
       degraded: classification.degraded,
       reasoning: classification.reasoning,
     },
-    attachment: stored,
+    attachment: stored ? { url: stored.url, provider: stored.provider, bytes: stored.bytes } : null,
   });
 }
 
