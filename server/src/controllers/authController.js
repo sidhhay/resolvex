@@ -201,42 +201,69 @@ function sha256(raw) {
 
 /**
  * POST /api/auth/forgot-password
- * Always returns 200 to prevent user enumeration.
+ * Sends a short-lived email OTP. Response is identical for known/unknown emails.
  */
 export async function forgotPassword(req, res) {
   const { email } = /** @type {any} */ (req.validated);
   const user = await userRepo.findByEmail(email);
-  let devResetUrl = null;
 
   if (user && user.is_active) {
-    const rawToken = crypto.randomBytes(32).toString('hex');
-    const tokenHash = sha256(rawToken);
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    const code = String(crypto.randomInt(100000, 1000000));
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    await otpRepo.upsertOtp(user.id, sha256(code), expiresAt);
 
-    await userRepo.setPasswordResetToken(email, tokenHash, expiresAt);
-
-    const resetUrl = `${config.mail.appUrl}/reset-password?token=${rawToken}`;
-    devResetUrl = resetUrl;
-
-    await sendMail({
+    const sent = await sendMail({
       to: email,
-      subject: 'Reset your ResolveX password',
-      text: `Click the link below to reset your password. It expires in 1 hour.\n\n${resetUrl}\n\nIf you did not request this, ignore this email.`,
+      subject: 'Your ResolveX password reset code',
+      text: `Your ResolveX password reset code is: ${code}\\n\\nIt expires in 10 minutes. If you did not request this, ignore this email.`,
       html: renderEmail({
-        heading: 'Reset your password',
-        body: `You requested a password reset. Click the button below — the link expires in 1 hour. If you did not request this, you can safely ignore this email.`,
-        cta: 'Reset password',
-        complaintId: undefined,
-      }).replace('href="' + config.mail.appUrl + '"', `href="${resetUrl}"`),
+        heading: `Your password reset code: ${code}`,
+        body: 'Enter this six-digit code in ResolveX to reset your password. It expires in 10 minutes. Do not share it with anyone.',
+        cta: 'Open ResolveX',
+      }),
     });
-
-    logger.info('Password reset email sent', { email, resetUrl });
+    if (!sent) {
+      await otpRepo.consumeOtp(user.id);
+      throw new ServiceUnavailableError('We could not send the reset code. Please try again later.');
+    }
   }
 
-  // Always respond identically to prevent user enumeration and account takeover.
-  res.json({
-    message: 'If that address is registered, a reset link has been sent.',
+  res.json({ message: 'If that address is registered, a password reset code has been sent.' });
+}
+
+/**
+ * POST /api/auth/forgot-password/verify
+ * Verifies the reset OTP and changes the password in one operation.
+ */
+export async function resetPasswordWithOtp(req, res) {
+  const { email, code, password } = /** @type {any} */ (req.validated);
+  const user = await userRepo.findByEmail(email);
+  if (!user || !user.is_active) {
+    throw new UnauthorizedError('The code is incorrect or has expired.');
+  }
+
+  const otpRow = await otpRepo.findActiveOtp(user.id);
+  if (!otpRow || otpRow.code_hash !== sha256(code)) {
+    throw new UnauthorizedError('The code is incorrect or has expired.');
+  }
+
+  const newHash = await bcrypt.hash(password, config.auth.bcryptRounds);
+  await userRepo.resetPassword(user.id, newHash);
+  await otpRepo.consumeOtp(user.id);
+
+  await sendMail({
+    to: user.email,
+    subject: 'Your ResolveX password was changed',
+    text: `Hello ${user.name},\\n\\nYour ResolveX account password was successfully updated. If you did not perform this change, contact an administrator immediately.`,
+    html: renderEmail({
+      heading: 'Password changed successfully',
+      body: `Hello ${user.name}, your account password has been updated. If you did not make this change, contact an administrator immediately.`,
+      cta: 'Go to ResolveX',
+    }),
   });
+
+  logger.info('Password reset completed with email OTP', { userId: user.id });
+  res.json({ message: 'Password updated successfully. Please sign in with your new password.' });
 }
 
 /**
