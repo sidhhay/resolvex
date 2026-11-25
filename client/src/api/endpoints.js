@@ -47,8 +47,8 @@ export const notificationApi = {
 };
 
 export const analyticsApi = {
-  overview: async () => (await api.get('/analytics/overview')).data,
-  escalations: async () => (await api.get('/analytics/escalations')).data,
+  overview: async (params) => (await api.get('/analytics/overview', { params })).data,
+  escalations: async (params) => (await api.get('/analytics/escalations', { params })).data,
   runSweep: async () => (await api.post('/analytics/escalations/run')).data,
 };
 
