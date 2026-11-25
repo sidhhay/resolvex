@@ -85,7 +85,6 @@ export async function sendMail(message) {
     logger.info('[mail:log-only]', {
       to: recipients,
       subject: message.subject,
-      preview: message.text,
     });
     return false;
   }
