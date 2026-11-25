@@ -246,10 +246,10 @@ export async function getStatusHistory(complaintId) {
  * @property {string | null} [from]  ISO date, inclusive lower bound on created_at.
  * @property {string | null} [to]    ISO date, exclusive upper bound on created_at.
  * @property {number | null} [handlerScopeUserId]
- *           When set, restricts results to complaints either assigned to this
- *           user or belonging to `handlerScopeDepartmentId`. This is the handler
- *           visibility rule; it needs OR semantics, which the other filters
- *           (all AND-ed) cannot express.
+ *           When set, restricts results to complaints created by this user,
+ *           assigned to this user, or belonging to `handlerScopeDepartmentId`.
+ *           This is the handler visibility rule; it needs OR semantics, which
+ *           the other filters (all AND-ed) cannot express.
  * @property {number | null} [handlerScopeDepartmentId]
  */
 
@@ -311,7 +311,7 @@ export async function list(options = {}) {
       AND ($10::boolean IS NOT TRUE OR c.escalation_level > 0)
       AND ($11::timestamptz IS NULL OR c.created_at >= $11)
       AND ($12::timestamptz IS NULL OR c.created_at < $12)
-      AND ($13::bigint IS NULL OR c.assigned_to = $13 OR c.department_id = $14)
+      AND ($13::bigint IS NULL OR c.assigned_to = $13 OR c.created_by = $13 OR c.department_id = $14)
   `;
 
   const { rows } = await query(
