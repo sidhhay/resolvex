@@ -274,4 +274,20 @@ CREATE TABLE IF NOT EXISTS auth_otps (
 );
 CREATE INDEX IF NOT EXISTS idx_auth_otps_user ON auth_otps (user_id);
 
+
+-- Pending student registrations. No row is inserted into users until the
+-- submitted email address has been verified with the one-time code.
+CREATE TABLE IF NOT EXISTS pending_signups (
+  email         CITEXT PRIMARY KEY,
+  name          TEXT        NOT NULL,
+  password_hash TEXT        NOT NULL,
+  code_hash     TEXT        NOT NULL,
+  expires_at    TIMESTAMPTZ NOT NULL,
+  attempts      SMALLINT    NOT NULL DEFAULT 0,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT pending_signups_attempts_range CHECK (attempts BETWEEN 0 AND 5),
+  CONSTRAINT pending_signups_name_not_blank CHECK (length(btrim(name)) > 0)
+);
+CREATE INDEX IF NOT EXISTS idx_pending_signups_expires_at ON pending_signups (expires_at);
+
 COMMIT;
