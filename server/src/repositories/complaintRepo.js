@@ -84,6 +84,10 @@ const PATCHABLE_COLUMNS = Object.freeze(new Set([
  * @returns {Promise<ComplaintRecord>}
  */
 export async function create(input) {
+  if (!Number.isSafeInteger(input.departmentId) || input.departmentId <= 0) {
+    throw new TypeError('A valid departmentId is required to create a complaint');
+  }
+
   const { rows } = await query(
     `INSERT INTO complaints
        (title, description, category, department_id, created_by, priority,
