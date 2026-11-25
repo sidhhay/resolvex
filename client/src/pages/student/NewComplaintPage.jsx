@@ -7,7 +7,7 @@
  * transparent rather than magic — including an honest note when the LLM was
  * unavailable and deterministic keyword rules were used instead.
  */
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CircleCheck, Info, Paperclip, Sparkles, Upload, X } from 'lucide-react';
 import { complaintApi } from '../../api/endpoints.js';
@@ -30,6 +30,19 @@ export function NewComplaintPage() {
 
   const [form, setForm] = useState({ title: '', description: '' });
   const [file, setFile] = useState(/** @type {File | null} */ (null));
+  const [previewUrl, setPreviewUrl] = useState(/** @type {string | null} */ (null));
+
+  // Create a temporary browser preview for image files and release it whenever
+  // the selection changes or the page unmounts. PDFs remain downloadable only.
+  useEffect(() => {
+    if (!file || !file.type.startsWith('image/')) {
+      setPreviewUrl(null);
+      return undefined;
+    }
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [file]);
   const [fieldErrors, setFieldErrors] = useState(/** @type {Record<string, string>} */ ({}));
   const [error, setError] = useState(/** @type {string | null} */ (null));
   const [progress, setProgress] = useState(0);
@@ -235,20 +248,34 @@ export function NewComplaintPage() {
             hint="A photo or PDF as evidence. JPEG, PNG, WebP, GIF or PDF, up to 10 MB."
           >
             {file ? (
-              <div className="flex items-center gap-2 rounded-md bg-surface-2 px-3 py-2">
-                <Paperclip size={14} className="shrink-0 text-ink-muted" aria-hidden />
-                <span className="min-w-0 flex-1 truncate text-xs text-ink">{file.name}</span>
-                <span className="shrink-0 text-[11px] text-ink-muted tabular">
-                  {(file.size / 1024 / 1024).toFixed(1)} MB
-                </span>
-                <button
-                  type="button"
-                  onClick={clearFile}
-                  className="shrink-0 rounded p-0.5 text-ink-muted transition hover:text-critical"
-                  aria-label={`Remove ${file.name}`}
-                >
-                  <X size={14} aria-hidden />
-                </button>
+              <div className="flex flex-col gap-3 rounded-md border border-line bg-surface-2 p-3">
+                {previewUrl && (
+                  <div className="overflow-hidden rounded-md bg-black/5">
+                    <img
+                      src={previewUrl}
+                      alt={`Preview of ${file.name}`}
+                      className="max-h-72 w-full rounded-md object-contain"
+                    />
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <Paperclip size={14} className="shrink-0 text-ink-muted" aria-hidden />
+                  <span className="min-w-0 flex-1 truncate text-xs text-ink">{file.name}</span>
+                  <span className="shrink-0 text-[11px] text-ink-muted tabular">
+                    {(file.size / 1024 / 1024).toFixed(1)} MB
+                  </span>
+                  <button
+                    type="button"
+                    onClick={clearFile}
+                    className="shrink-0 rounded p-0.5 text-ink-muted transition hover:text-critical"
+                    aria-label={`Remove ${file.name}`}
+                  >
+                    <X size={14} aria-hidden />
+                  </button>
+                </div>
+                {previewUrl && (
+                  <p className="text-[11px] text-ink-muted">Image preview — this photo will be attached when you submit.</p>
+                )}
               </div>
             ) : (
               <label
