@@ -36,14 +36,36 @@ const authLimiter = rateLimit({
   message: 'Too many attempts. Wait a few minutes before trying again.',
 });
 
+const signupLimiter = rateLimit({
+  keyPrefix: 'signup',
+  max: 5,
+  message: 'Too many signup code requests. Wait 15 minutes before trying again.',
+});
+
+const signupVerifyLimiter = rateLimit({
+  keyPrefix: 'signup-verify',
+  max: 10,
+  message: 'Too many verification attempts. Wait 15 minutes before trying again.',
+});
+
 router.post(
   '/register',
-  authLimiter,
+  signupLimiter,
   validate({
     name: { type: 'string', required: true, min: 2, max: 120 },
     ...credentialFields,
   }),
   asyncHandler(authController.register),
+);
+
+router.post(
+  '/register/verify',
+  signupVerifyLimiter,
+  validate({
+    email: credentialFields.email,
+    code: { type: 'string', required: true, min: 6, max: 6, pattern: /^\\d{6}$/, message: 'Enter the 6-digit code from your email' },
+  }),
+  asyncHandler(authController.verifyRegistrationOtp),
 );
 
 router.post('/login', authLimiter, validate(credentialFields), asyncHandler(authController.login));
