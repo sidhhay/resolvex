@@ -67,7 +67,6 @@ export function LifecycleBar({ currentStatus = 'Submitted' }) {
       </div>
 
       <div className="relative max-w-2xl mx-auto my-8">
-        {/* Track spans the outer edges of the first and last 48px circles. */}
         <div className="absolute top-6 left-2 right-2 sm:left-6 sm:right-6 h-1.5 -translate-y-1/2 rounded-full bg-surface-2 border border-line overflow-hidden">
           <div
             className={`h-full rounded-full transition-[width] duration-700 ease-in-out ${
@@ -86,9 +85,10 @@ export function LifecycleBar({ currentStatus = 'Submitted' }) {
             let iconColorClass = 'border-line text-ink-muted bg-surface';
             if (isCurrent && isEscalated) {
               iconColorClass = 'border-amber-500 bg-amber-500/10 text-amber-600 ring-4 ring-amber-500/20';
-            } else if (isCurrent) {
+            } else if (isCurrent && !isClosed) {
               iconColorClass = 'border-series-1 bg-series-1/10 text-series-1 ring-4 ring-series-1/20';
-            } else if (isCompleted) {
+            } else if (isCompleted || (isCurrent && isClosed)) {
+              // Closed is a completed stage: use the same filled node as earlier completed stages.
               iconColorClass = 'border-series-1 bg-series-1 text-white shadow-sm';
             }
 
