@@ -1,4 +1,5 @@
 -- Run once against the existing production Neon database.
+CREATE EXTENSION IF NOT EXISTS citext;
 CREATE TABLE IF NOT EXISTS pending_signups (
   email         CITEXT PRIMARY KEY,
   name          TEXT        NOT NULL,
