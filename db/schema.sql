@@ -269,8 +269,10 @@ CREATE TABLE IF NOT EXISTS auth_otps (
   code_hash    TEXT        NOT NULL,          -- SHA-256 of the 6-digit code
   expires_at   TIMESTAMPTZ NOT NULL,
   used         BOOLEAN     NOT NULL DEFAULT FALSE,
+  purpose      TEXT        NOT NULL DEFAULT 'login',
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
-  CONSTRAINT auth_otps_user_key UNIQUE (user_id)  -- one active OTP per user
+  CONSTRAINT auth_otps_user_purpose_key UNIQUE (user_id, purpose),
+  CONSTRAINT auth_otps_purpose_check CHECK (purpose IN ('login', 'password_reset'))
 );
 CREATE INDEX IF NOT EXISTS idx_auth_otps_user ON auth_otps (user_id);
 
