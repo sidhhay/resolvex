@@ -210,7 +210,7 @@ export async function forgotPassword(req, res) {
   if (user && user.is_active) {
     const code = String(crypto.randomInt(100000, 1000000));
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-    await otpRepo.upsertOtp(user.id, sha256(code), expiresAt);
+    await otpRepo.upsertOtp(user.id, sha256(code), expiresAt, 'password_reset');
 
     const sent = await sendMail({
       to: email,
@@ -223,7 +223,7 @@ export async function forgotPassword(req, res) {
       }),
     });
     if (!sent) {
-      await otpRepo.consumeOtp(user.id);
+      await otpRepo.consumeOtp(user.id, 'password_reset');
       throw new ServiceUnavailableError('We could not send the reset code. Please try again later.');
     }
   }
@@ -242,14 +242,14 @@ export async function resetPasswordWithOtp(req, res) {
     throw new UnauthorizedError('The code is incorrect or has expired.');
   }
 
-  const otpRow = await otpRepo.findActiveOtp(user.id);
+  const otpRow = await otpRepo.findActiveOtp(user.id, 'password_reset');
   if (!otpRow || otpRow.code_hash !== sha256(code)) {
     throw new UnauthorizedError('The code is incorrect or has expired.');
   }
 
   const newHash = await bcrypt.hash(password, config.auth.bcryptRounds);
   await userRepo.resetPassword(user.id, newHash);
-  await otpRepo.consumeOtp(user.id);
+  await otpRepo.consumeOtp(user.id, 'password_reset');
 
   await sendMail({
     to: user.email,
