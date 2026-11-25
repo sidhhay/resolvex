@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ShieldCheck, ArrowLeft, Mail, CheckCircle } from 'lucide-react';
+import { ShieldCheck, ArrowLeft, Mail, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import { authApi } from '../api/endpoints.js';
 
 export function ForgotPasswordPage() {
@@ -12,6 +12,8 @@ export function ForgotPasswordPage() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   async function handleRequestCode(e) {
     e.preventDefault();
@@ -83,15 +85,21 @@ export function ForgotPasswordPage() {
                 </div>
                 <div>
                   <label htmlFor="password" className="block text-[11px] font-bold text-ink-secondary uppercase tracking-widest mb-2">New password</label>
-                  <input id="password" type="password" autoComplete="new-password" required
-                    className="w-full bg-surface border border-line rounded-xl px-5 py-4 text-ink font-medium focus:outline-none focus:border-series-1 focus:ring-4 focus:ring-series-1/20"
-                    placeholder="Min 8 chars, 1 letter, 1 number" value={password} onChange={(e) => setPassword(e.target.value)} />
+                  <div className="relative">
+                    <input id="password" type={showPassword ? "text" : "password"} autoComplete="new-password" required
+                      className="w-full bg-surface border border-line rounded-xl px-5 py-4 pr-12 text-ink font-medium focus:outline-none focus:border-series-1 focus:ring-4 focus:ring-series-1/20"
+                      placeholder="Min 8 chars, 1 letter, 1 number" value={password} onChange={(e) => setPassword(e.target.value)} />
+                    <button type="button" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Hide password" : "Show password"} className="absolute right-4 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink">{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
+                  </div>
                 </div>
                 <div>
                   <label htmlFor="confirm" className="block text-[11px] font-bold text-ink-secondary uppercase tracking-widest mb-2">Confirm new password</label>
-                  <input id="confirm" type="password" autoComplete="new-password" required
-                    className="w-full bg-surface border border-line rounded-xl px-5 py-4 text-ink font-medium focus:outline-none focus:border-series-1 focus:ring-4 focus:ring-series-1/20"
-                    placeholder="Enter password again" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+                  <div className="relative">
+                    <input id="confirm" type={showConfirm ? "text" : "password"} autoComplete="new-password" required
+                      className="w-full bg-surface border border-line rounded-xl px-5 py-4 pr-12 text-ink font-medium focus:outline-none focus:border-series-1 focus:ring-4 focus:ring-series-1/20"
+                      placeholder="Enter password again" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+                    <button type="button" onClick={() => setShowConfirm((value) => !value)} aria-label={showConfirm ? "Hide password" : "Show password"} className="absolute right-4 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink">{showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}</button>
+                  </div>
                 </div>
                 {error && <div role="alert" className="bg-critical/10 border border-critical/20 px-4 py-3 rounded-lg"><p className="text-sm text-critical font-semibold">{error}</p></div>}
                 <button type="submit" disabled={loading || code.length !== 6 || !password || !confirm}
