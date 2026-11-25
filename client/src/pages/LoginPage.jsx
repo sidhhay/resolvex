@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { ShieldCheck, Sun, Moon, Monitor, ArrowRight, Check } from 'lucide-react';
+import { ShieldCheck, Sun, Moon, Monitor, ArrowRight, Check, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { Spinner } from '../components/ui/index.jsx';
@@ -131,6 +131,7 @@ export function LoginPage() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -238,16 +239,21 @@ export function LoginPage() {
               <label htmlFor="password" className="block text-[11px] font-bold text-ink-secondary uppercase tracking-widest mb-2 transition-colors group-focus-within:text-series-1">
                 Password
               </label>
+              <div className="relative">
               <input
                 id="password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 autoComplete="current-password"
                 required
-                className="w-full bg-surface border border-line rounded-xl px-5 py-4 text-ink font-medium shadow-sm focus:outline-none focus:border-series-1 focus:ring-4 focus:ring-series-1/20 transition-all placeholder:text-ink-muted/50"
+                className="w-full bg-surface border border-line rounded-xl px-5 py-4 pr-12 text-ink font-medium shadow-sm focus:outline-none focus:border-series-1 focus:ring-4 focus:ring-series-1/20 transition-all placeholder:text-ink-muted/50"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
               />
+              <button type="button" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Hide password" : "Show password"} className="absolute right-4 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink" tabIndex={0}>
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+              </div>
             </div>
 
               <div className="flex justify-end -mt-2">
