@@ -8,7 +8,7 @@
 import { BadRequestError, NotFoundError } from '../domain/errors.js';
 import { COMPLAINT_STATUSES, getState } from '../domain/complaintState.js';
 import { requireUser } from '../middleware/auth.js';
-import { storeAttachment } from '../services/uploadService.js';
+import { storeAttachment, deleteStoredAttachment } from '../services/uploadService.js';
 import {
   createComplaint,
   getComplaintDetail,
@@ -33,10 +33,20 @@ export async function create(req, res) {
   // complaint row pointing at nothing.
   const stored = req.file ? await storeAttachment(req.file) : null;
 
-  const { complaint, classification } = await createComplaint(
-    { title, description, attachmentUrl: stored?.url ?? null },
-    user,
-  );
+  let result;
+  try {
+    result = await createComplaint(
+      { title, description, attachmentUrl: stored?.url ?? null },
+      user,
+    );
+  } catch (error) {
+    // The file was uploaded before classification/DB persistence. If any later
+    // step fails, remove the now-unreferenced object rather than leaking storage.
+    if (stored) await deleteStoredAttachment(stored);
+    throw error;
+  }
+
+  const { complaint, classification } = result;
 
   res.status(201).json({
     complaint,
