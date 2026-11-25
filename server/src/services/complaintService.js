@@ -229,26 +229,27 @@ export async function createComplaint(input, user) {
     throw new Error('Complaint routing is unavailable. Please try again later.');
   }
 
-  const complaint = await complaintRepo.create({
-    title: input.title.trim(),
-    description: input.description.trim(),
-    category: input.categoryOverride?.trim() || classification.category,
-    departmentId: department.id,
-    createdBy: user.id,
-    priority: classification.priority,
-    attachmentUrl: input.attachmentUrl ?? null,
-    aiConfidence: classification.confidence,
-    aiStrategy: classification.strategy,
-  });
+  const complaint = await withTransaction(async (client) => {
+    const created = await complaintRepo.createWithClient(client, {
+      title: input.title.trim(),
+      description: input.description.trim(),
+      category: input.categoryOverride?.trim() || classification.category,
+      departmentId: department.id,
+      createdBy: user.id,
+      priority: classification.priority,
+      attachmentUrl: input.attachmentUrl ?? null,
+      aiConfidence: classification.confidence,
+      aiStrategy: classification.strategy,
+    });
 
-  await withTransaction(async (client) => {
     await complaintRepo.insertStatusHistory(client, {
-      complaintId: complaint.id,
+      complaintId: created.id,
       fromStatus: null,
       toStatus: 'Submitted',
       actorId: user.id,
-      note: `Classified as ${complaint.category} by the ${classification.strategy} engine (confidence ${classification.confidence}).`,
+      note: `Classified as ${created.category} by the ${classification.strategy} engine (confidence ${classification.confidence}).`,
     });
+    return created;
   });
 
   const audience = await buildAudience(EVENTS.COMPLAINT_CREATED, complaint);
@@ -291,6 +292,24 @@ export async function transitionComplaint(params) {
 
     const actor = toActor(user, current);
     const { patch } = planTransition({ complaint: current, actor, to, payload });
+
+    // Never trust the client-side assignment dropdown as an authorization check.
+    // The selected account must be active and eligible for the complaint's
+    // effective department (including when an administrator moves departments).
+    if (to === 'Assigned') {
+      const departmentId = payload.departmentId ?? current.department_id;
+      if (!Number.isSafeInteger(departmentId) || departmentId <= 0) {
+        throw new ForbiddenError('A valid department is required before assigning this complaint.');
+      }
+      const assigneeId = Number(payload.assignedTo);
+      if (!Number.isSafeInteger(assigneeId) || assigneeId <= 0) {
+        throw new ForbiddenError('Select a valid handler for this complaint.');
+      }
+      const assignee = await userRepo.findAssignableHandler(assigneeId, departmentId);
+      if (!assignee) {
+        throw new ForbiddenError('The selected account is inactive or is not an eligible handler for this department.');
+      }
+    }
 
     const updated = await complaintRepo.applyPatch(client, complaintId, patch);
 
