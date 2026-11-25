@@ -306,12 +306,12 @@ export async function transitionComplaint(params) {
     // Never trust the client-side assignment dropdown as an authorization check.
     // The selected account must be active and eligible for the complaint's
     // effective department (including when an administrator moves departments).
-    if (to === 'Assigned') {
-      const departmentId = Number(payload.departmentId ?? current.department_id);
+    if (patch.assigned_to !== undefined && patch.assigned_to !== null && patch.assigned_to !== current.assigned_to) {
+      const departmentId = Number(patch.department_id ?? current.department_id);
       if (!Number.isSafeInteger(departmentId) || departmentId <= 0) {
         throw new ForbiddenError('A valid department is required before assigning this complaint.');
       }
-      const assigneeId = Number(payload.assignedTo);
+      const assigneeId = Number(patch.assigned_to);
       if (!Number.isSafeInteger(assigneeId) || assigneeId <= 0) {
         throw new ForbiddenError('Select a valid handler for this complaint.');
       }
