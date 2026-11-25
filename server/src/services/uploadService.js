@@ -10,7 +10,7 @@
  * an SVG (a script-execution vector) with a `image/png` label.
  */
 import { randomUUID } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { v2 as cloudinary } from 'cloudinary';
 import { config } from '../config/env.js';
@@ -110,8 +110,14 @@ export async function storeAttachment(file) {
   }
 
   if (isCloudinaryEnabled()) {
-    const url = await uploadToCloudinary(file.buffer, sniffed.mime);
-    return { url, provider: 'cloudinary', bytes: file.buffer.length };
+    const uploaded = await uploadToCloudinary(file.buffer, sniffed.mime);
+    return {
+      url: uploaded.url,
+      provider: 'cloudinary',
+      publicId: uploaded.publicId,
+      resourceType: uploaded.resourceType,
+      bytes: file.buffer.length,
+    };
   }
 
   // On a serverless platform the only writable path is /tmp, and it is discarded
@@ -151,11 +157,47 @@ function uploadToCloudinary(buffer, mime) {
           reject(new ServiceUnavailableError('Could not store the attachment; please retry'));
           return;
         }
-        resolve(result.secure_url);
+        resolve({ url: result.secure_url, publicId: result.public_id, resourceType: result.resource_type });
       },
     );
     stream.end(buffer);
   });
+}
+
+/**
+ * Best-effort rollback for an attachment uploaded before its complaint insert.
+ * @param {{ provider: 'cloudinary' | 'local', publicId?: string, resourceType?: string, url: string }} stored
+ * @returns {Promise<void>}
+ */
+export async function deleteStoredAttachment(stored) {
+  if (!stored?.url) return;
+  try {
+    if (stored.provider === 'cloudinary' && stored.publicId) {
+      await new Promise((resolve, reject) => {
+        cloudinary.uploader.destroy(
+          stored.publicId,
+          { resource_type: stored.resourceType || 'image', invalidate: true },
+          (error, result) => {
+            if (error) reject(error);
+            else if (result?.result !== 'ok' && result?.result !== 'not found') {
+              reject(new Error(`Cloudinary cleanup returned ${result?.result ?? 'no result'}`));
+            } else resolve();
+          },
+        );
+      });
+      return;
+    }
+    if (stored.provider === 'local') {
+      const filename = path.basename(new URL(stored.url, 'http://localhost').pathname);
+      if (!filename || filename !== path.basename(filename)) return;
+      await unlink(path.join(path.resolve(process.cwd(), config.uploads.localDir), filename));
+    }
+  } catch (error) {
+    logger.error('Failed to clean up an unreferenced attachment', {
+      provider: stored.provider,
+      error,
+    });
+  }
 }
 
 /**
