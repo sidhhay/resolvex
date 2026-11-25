@@ -157,9 +157,7 @@ export function ComplaintDetailPage() {
                 {complaint.description}
               </p>
 
-              {complaint.attachment_url && (
-                <AttachmentPreview url={complaint.attachment_url} />
-              )}
+              <AttachmentPreview url={complaint.attachment_url} />
             </div>
 
             {complaint.resolution_note && (
@@ -297,6 +295,12 @@ function AttachmentPreview({ url }) {
         <Paperclip size={13} aria-hidden />
         Attached evidence
       </p>
+      {!url ? (
+        <p className="text-xs text-ink-muted">
+          No attachment was saved with this complaint.
+        </p>
+      ) : (
+        <>
       {!imageFailed && (
         <a href={url} target="_blank" rel="noreferrer noopener" className="block">
           <img
@@ -317,6 +321,8 @@ function AttachmentPreview({ url }) {
         <Paperclip size={13} aria-hidden />
         {imageFailed ? 'Open attached file' : 'Open full-size attachment'}
       </a>
+        </>
+      )}
     </div>
   );
 }
