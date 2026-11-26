@@ -100,7 +100,7 @@ assets/                   System diagrams (DFD Level 0-2, ER, Gantt, Use Case)
 Complementary project artifacts are available in the repository:
 
 - 📊 **Architecture & Diagrams**: [`assets/diagrams/`](assets/diagrams/) and [`assets/screenshots/`](assets/screenshots/) (DFD Level 0/1/2, ER diagram, Component diagram, Use Case)
-- 📑 **Coursework & Specifications**: [`docs/`](docs/) (`architecture.md`, `design-patterns.md`, `database-design.md`, `requirements.md`)
+- 📑 **Technical Documentation**: [`docs/`](docs/) — start with the [documentation index](docs/README.md) for architecture, requirements, database design, design patterns and the REST API reference.
 - 📝 **Proposal & Weekly Journals**: [`project-proposal/`](project-proposal/) and [`journals/`](journals/)
 
 ---
