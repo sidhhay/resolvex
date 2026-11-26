@@ -13,8 +13,18 @@ affected; and the resolution is not final until the complainant says so.
 
 ---
 
+## Live Deployment
+
+- **Frontend application:** [https://resolvex-psi-eight.vercel.app](https://resolvex-psi-eight.vercel.app)
+- **Backend API:** [https://resolvex-api-nine.vercel.app](https://resolvex-api-nine.vercel.app)
+
+The frontend and backend are deployed separately on Vercel.
+
+---
+
 ## Contents
 
+- [Live Deployment](#live-deployment)
 - [Architecture](#architecture)
 - [The four design patterns](#the-four-design-patterns)
 - [Project Documentation & Diagrams](#project-documentation--diagrams)
